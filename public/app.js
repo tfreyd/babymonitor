@@ -15,6 +15,7 @@ const elements = {
   startMonitorBtn: document.getElementById("startMonitorBtn"),
   stopMonitorBtn: document.getElementById("stopMonitorBtn"),
   babyStatus: document.getElementById("babyStatus"),
+  reconnectAudioBtn: document.getElementById("reconnectAudioBtn"),
   enablePushBtn: document.getElementById("enablePushBtn"),
   pushStatus: document.getElementById("pushStatus"),
   alertsList: document.getElementById("alertsList"),
@@ -81,6 +82,7 @@ elements.threshold.addEventListener("input", () => {
 
 elements.startMonitorBtn.addEventListener("click", startMonitoring);
 elements.stopMonitorBtn.addEventListener("click", stopMonitoring);
+elements.reconnectAudioBtn.addEventListener("click", reconnectAudio);
 elements.enablePushBtn.addEventListener("click", enablePushNotifications);
 
 socket.on("connect", () => {
@@ -369,15 +371,27 @@ function detectNoiseFrame() {
   state.frameId = requestAnimationFrame(detectNoiseFrame);
 }
 
-async function initiateOffer(remoteSocketId) {
+async function initiateOffer(remoteSocketId, options = {}) {
   if (state.role !== "parent" || !remoteSocketId) {
     return;
   }
+  const { iceRestart = false, force = false } = options;
 
   try {
-    const peer = createPeerConnection(remoteSocketId);
-    if (peer.localDescription || peer.signalingState !== "stable") {
-      return;
+    let peer = createPeerConnection(remoteSocketId);
+    if (peer.signalingState !== "stable") {
+      if (!force) {
+        return;
+      }
+      closePeerConnection(remoteSocketId);
+      peer = createPeerConnection(remoteSocketId);
+      if (peer.signalingState !== "stable") {
+        return;
+      }
+    }
+
+    if (iceRestart && typeof peer.restartIce === "function") {
+      peer.restartIce();
     }
     const hasAudioTransceiver = peer
       .getTransceivers()
@@ -385,7 +399,8 @@ async function initiateOffer(remoteSocketId) {
     if (!hasAudioTransceiver) {
       peer.addTransceiver("audio", { direction: "recvonly" });
     }
-    const offer = await peer.createOffer();
+    const offerOptions = iceRestart ? { iceRestart: true } : undefined;
+    const offer = await peer.createOffer(offerOptions);
     await peer.setLocalDescription(offer);
     updateStatus(elements.audioStatus, "Connecting live audio...", "");
     socket.emit("webrtc-offer", {
@@ -397,6 +412,30 @@ async function initiateOffer(remoteSocketId) {
     closePeerConnection(remoteSocketId);
     updateStatus(elements.audioStatus, "Could not start live audio", "error");
   }
+}
+
+async function reconnectAudio() {
+  if (state.role !== "parent") {
+    updateStatus(elements.audioStatus, "Switch to Parent mode first", "error");
+    return;
+  }
+  if (!state.monitorCode || !state.accessKey) {
+    updateStatus(elements.audioStatus, "Set monitor code and access key first", "error");
+    return;
+  }
+
+  const peerSocketIds = [...state.peerConnections.keys()];
+  updateStatus(elements.audioStatus, "Restarting audio connection...", "");
+
+  if (peerSocketIds.length === 0) {
+    joinRoom();
+    return;
+  }
+
+  const reconnects = peerSocketIds.map((socketId) =>
+    initiateOffer(socketId, { iceRestart: true, force: true })
+  );
+  await Promise.allSettled(reconnects);
 }
 
 function createPeerConnection(remoteSocketId) {
