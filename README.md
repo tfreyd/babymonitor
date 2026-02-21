@@ -50,6 +50,7 @@ cp .env.example .env
 - Baby microphone is not shared until `Start Monitoring` is clicked.
 - Push notifications need service worker support and HTTPS in most browsers (localhost usually works without HTTPS during local development).
 - Current subscription storage is in memory, so restarting server clears subscriptions.
+- For cross-network audio reliability, configure TURN (`TURN_URLS`, `TURN_USERNAME`, `TURN_CREDENTIAL`).
 
 ## Deploy on Render
 

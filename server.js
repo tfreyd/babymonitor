@@ -16,6 +16,11 @@ const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "mailto:admin@babymonitor.loc
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "*";
 const TRUST_PROXY = parseTrustProxy(process.env.TRUST_PROXY, Boolean(process.env.RENDER));
 const PUSH_ENABLED = Boolean(PUBLIC_VAPID_KEY && PRIVATE_VAPID_KEY);
+const ICE_SERVERS = buildIceServers({
+  turnUrls: process.env.TURN_URLS || process.env.TURN_URL || "",
+  turnUsername: process.env.TURN_USERNAME || "",
+  turnCredential: process.env.TURN_CREDENTIAL || ""
+});
 
 if (PUSH_ENABLED) {
   webpush.setVapidDetails(VAPID_SUBJECT, PUBLIC_VAPID_KEY, PRIVATE_VAPID_KEY);
@@ -59,7 +64,11 @@ app.get("/health", (_req, res) => {
 });
 
 app.get("/config", (_req, res) => {
-  res.json({ publicVapidKey: PUSH_ENABLED ? PUBLIC_VAPID_KEY : null, pushEnabled: PUSH_ENABLED });
+  res.json({
+    publicVapidKey: PUSH_ENABLED ? PUBLIC_VAPID_KEY : null,
+    pushEnabled: PUSH_ENABLED,
+    iceServers: ICE_SERVERS
+  });
 });
 
 app.post("/subscribe", (req, res) => {
@@ -353,6 +362,24 @@ function parseTrustProxy(rawValue, isRender) {
     return asNumber;
   }
   return rawValue;
+}
+
+function buildIceServers({ turnUrls, turnUsername, turnCredential }) {
+  const servers = [{ urls: "stun:stun.l.google.com:19302" }];
+  const urls = String(turnUrls || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  if (urls.length > 0 && turnUsername && turnCredential) {
+    servers.push({
+      urls,
+      username: turnUsername,
+      credential: turnCredential
+    });
+  }
+
+  return servers;
 }
 
 server.listen(PORT, HOST, () => {

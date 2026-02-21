@@ -15,5 +15,11 @@ services:
         value: "*"
       - key: TRUST_PROXY
         value: "1"
+      - key: TURN_URLS
+        sync: false
+      - key: TURN_USERNAME
+        sync: false
+      - key: TURN_CREDENTIAL
+        sync: false
       - key: VAPID_SUBJECT
         value: mailto:admin@example.com

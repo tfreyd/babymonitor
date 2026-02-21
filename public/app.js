@@ -38,6 +38,7 @@ const state = {
   audioBuffer: null,
   swRegistration: null,
   publicVapidKey: null,
+  iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
   peerConnections: new Map()
 };
 
@@ -141,6 +142,11 @@ socket.on("webrtc-offer", async ({ sourceId, offer }) => {
     return;
   }
   if (!state.monitoring) {
+    socket.emit("baby-not-ready-for-audio", {
+      monitorCode: state.monitorCode,
+      targetId: sourceId,
+      reason: "Baby must press Start Monitoring first"
+    });
     updateStatus(
       elements.babyStatus,
       "Parent requested audio. Press Start Monitoring to share microphone.",
@@ -193,6 +199,13 @@ socket.on("webrtc-ice-candidate", async ({ sourceId, candidate }) => {
   } catch (_error) {
     // Ignore individual ICE candidate failures.
   }
+});
+
+socket.on("baby-not-ready-for-audio", ({ reason }) => {
+  if (state.role !== "parent") {
+    return;
+  }
+  updateStatus(elements.audioStatus, reason || "Baby device is not ready for audio", "error");
 });
 
 socket.on("noise-alert", (alert) => {
@@ -256,6 +269,10 @@ function joinRoom() {
 
 async function startMonitoring() {
   if (state.monitoring) {
+    return;
+  }
+  if (state.role !== "baby") {
+    updateStatus(elements.babyStatus, "Select Use as Baby Device first", "error");
     return;
   }
 
@@ -370,6 +387,7 @@ async function initiateOffer(remoteSocketId) {
     }
     const offer = await peer.createOffer();
     await peer.setLocalDescription(offer);
+    updateStatus(elements.audioStatus, "Connecting live audio...", "");
     socket.emit("webrtc-offer", {
       monitorCode: state.monitorCode,
       targetId: remoteSocketId,
@@ -387,7 +405,7 @@ function createPeerConnection(remoteSocketId) {
   }
 
   const peer = new RTCPeerConnection({
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+    iceServers: state.iceServers
   });
 
   peer.onicecandidate = (event) => {
@@ -403,6 +421,13 @@ function createPeerConnection(remoteSocketId) {
 
   peer.onconnectionstatechange = () => {
     const status = peer.connectionState;
+    if (state.role === "parent") {
+      if (status === "connecting") {
+        updateStatus(elements.audioStatus, "Connecting live audio...", "");
+      } else if (status === "connected") {
+        updateStatus(elements.audioStatus, "Live audio connected", "ok");
+      }
+    }
     if (status === "failed" || status === "closed" || status === "disconnected") {
       closePeerConnection(remoteSocketId);
     }
@@ -484,6 +509,13 @@ async function bootstrapServiceWorker() {
   }
 
   try {
+    const configResponse = await fetch("/config");
+    const config = await configResponse.json();
+    if (Array.isArray(config.iceServers) && config.iceServers.length > 0) {
+      state.iceServers = config.iceServers;
+    }
+    state.publicVapidKey = config.publicVapidKey || null;
+
     state.swRegistration = await navigator.serviceWorker.register("/sw.js");
   } catch (_error) {
     updateStatus(
@@ -518,6 +550,9 @@ async function enablePushNotifications() {
     if (!state.publicVapidKey) {
       const configResponse = await fetch("/config");
       const config = await configResponse.json();
+      if (Array.isArray(config.iceServers) && config.iceServers.length > 0) {
+        state.iceServers = config.iceServers;
+      }
       if (!config.pushEnabled || !config.publicVapidKey) {
         updateStatus(
           elements.pushStatus,
