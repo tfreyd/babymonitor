@@ -24,6 +24,12 @@ HOST=0.0.0.0 PORT=3000 npm start
 
 Then open `http://YOUR_LOCAL_IP:3000` from phone/computer.
 
+For push notifications in local development, create a `.env` file from `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
 ## Usage
 
 1. Open the app on two devices.

@@ -1,6 +1,7 @@
 const path = require("node:path");
 const http = require("node:http");
 const crypto = require("node:crypto");
+require("dotenv").config();
 const express = require("express");
 const { Server } = require("socket.io");
 const webpush = require("web-push");
@@ -196,6 +197,15 @@ io.on("connection", (socket) => {
       return;
     }
     socket.to(room).emit("baby-ready-for-audio", { socketId: socket.id });
+  });
+
+  socket.on("baby-not-ready-for-audio", ({ monitorCode, targetId, reason }) => {
+    relayWebRtcMessage(socket, {
+      monitorCode,
+      targetId,
+      event: "baby-not-ready-for-audio",
+      payload: { sourceId: socket.id, reason: String(reason || "Baby monitoring is not started") }
+    });
   });
 });
 

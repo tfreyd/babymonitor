@@ -473,11 +473,24 @@ async function bootstrapServiceWorker() {
     elements.enablePushBtn.disabled = true;
     return;
   }
+  if (!window.isSecureContext) {
+    updateStatus(
+      elements.pushStatus,
+      "Notifications require a secure context (HTTPS, or localhost on desktop).",
+      "error"
+    );
+    elements.enablePushBtn.disabled = true;
+    return;
+  }
 
   try {
     state.swRegistration = await navigator.serviceWorker.register("/sw.js");
   } catch (_error) {
-    updateStatus(elements.pushStatus, "Could not register service worker", "error");
+    updateStatus(
+      elements.pushStatus,
+      "Could not register service worker. On iPhone, also add app to Home Screen for web push.",
+      "error"
+    );
     elements.enablePushBtn.disabled = true;
   }
 }
@@ -485,6 +498,10 @@ async function bootstrapServiceWorker() {
 async function enablePushNotifications() {
   if (state.role !== "parent") {
     updateStatus(elements.pushStatus, "Switch to Parent mode to enable notifications", "error");
+    return;
+  }
+  if (!("Notification" in window)) {
+    updateStatus(elements.pushStatus, "Notifications are not supported in this browser", "error");
     return;
   }
 
@@ -498,7 +515,33 @@ async function enablePushNotifications() {
   }
 
   try {
-    const permission = await Notification.requestPermission();
+    if (!state.publicVapidKey) {
+      const configResponse = await fetch("/config");
+      const config = await configResponse.json();
+      if (!config.pushEnabled || !config.publicVapidKey) {
+        updateStatus(
+          elements.pushStatus,
+          "Push disabled on server. Set PUBLIC_VAPID_KEY and PRIVATE_VAPID_KEY.",
+          "error"
+        );
+        return;
+      }
+      state.publicVapidKey = config.publicVapidKey;
+    }
+
+    if (Notification.permission === "denied") {
+      updateStatus(
+        elements.pushStatus,
+        "Browser blocked notifications for this site. Re-enable site notifications in browser settings.",
+        "error"
+      );
+      return;
+    }
+
+    const permission =
+      Notification.permission === "granted"
+        ? "granted"
+        : await Notification.requestPermission();
     if (permission !== "granted") {
       updateStatus(elements.pushStatus, "Notification permission was not granted", "error");
       return;
@@ -509,14 +552,13 @@ async function enablePushNotifications() {
       return;
     }
 
-    if (!state.publicVapidKey) {
-      const response = await fetch("/config");
-      const config = await response.json();
-      if (!config.pushEnabled || !config.publicVapidKey) {
-        updateStatus(elements.pushStatus, "Push notifications disabled on server", "error");
-        return;
+    const existingSubscription = await state.swRegistration.pushManager.getSubscription();
+    if (existingSubscription) {
+      try {
+        await existingSubscription.unsubscribe();
+      } catch (_error) {
+        // Continue with fresh subscribe attempt.
       }
-      state.publicVapidKey = config.publicVapidKey;
     }
 
     const subscription = await state.swRegistration.pushManager.subscribe({
@@ -535,13 +577,16 @@ async function enablePushNotifications() {
     });
 
     if (!response.ok) {
-      updateStatus(elements.pushStatus, "Failed to register push subscription", "error");
+      const body = await response.json().catch(() => ({}));
+      const reason = body?.error ? `: ${body.error}` : "";
+      updateStatus(elements.pushStatus, `Failed to register push subscription${reason}`, "error");
       return;
     }
 
     updateStatus(elements.pushStatus, "Notifications enabled", "ok");
-  } catch (_error) {
-    updateStatus(elements.pushStatus, "Failed to enable notifications", "error");
+  } catch (error) {
+    const detail = error?.message ? `: ${error.message}` : "";
+    updateStatus(elements.pushStatus, `Failed to enable notifications${detail}`, "error");
   }
 }
 
