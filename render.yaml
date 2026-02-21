@@ -13,5 +13,7 @@ services:
         value: 0.0.0.0
       - key: ALLOWED_ORIGIN
         value: "*"
+      - key: TRUST_PROXY
+        value: "1"
       - key: VAPID_SUBJECT
         value: mailto:admin@example.com

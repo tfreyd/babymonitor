@@ -14,6 +14,7 @@ const PUBLIC_VAPID_KEY = process.env.PUBLIC_VAPID_KEY || "";
 const PRIVATE_VAPID_KEY = process.env.PRIVATE_VAPID_KEY || "";
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "mailto:admin@babymonitor.local";
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "*";
+const TRUST_PROXY = parseTrustProxy(process.env.TRUST_PROXY, Boolean(process.env.RENDER));
 const PUSH_ENABLED = Boolean(PUBLIC_VAPID_KEY && PRIVATE_VAPID_KEY);
 
 if (PUSH_ENABLED) {
@@ -24,6 +25,7 @@ if (PUSH_ENABLED) {
 }
 
 const app = express();
+app.set("trust proxy", TRUST_PROXY);
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -333,6 +335,24 @@ function safeEqual(a, b) {
     return false;
   }
   return crypto.timingSafeEqual(aBuffer, bBuffer);
+}
+
+function parseTrustProxy(rawValue, isRender) {
+  if (rawValue === undefined || rawValue === null || rawValue === "") {
+    return isRender ? 1 : false;
+  }
+  const lowered = String(rawValue).trim().toLowerCase();
+  if (lowered === "true") {
+    return true;
+  }
+  if (lowered === "false") {
+    return false;
+  }
+  const asNumber = Number(lowered);
+  if (Number.isInteger(asNumber) && asNumber >= 0) {
+    return asNumber;
+  }
+  return rawValue;
 }
 
 server.listen(PORT, HOST, () => {
