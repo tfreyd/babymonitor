@@ -1,0 +1,153 @@
+:root {
+  color-scheme: light;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --text: #1e2430;
+  --muted: #4d5565;
+  --line: #d8dce6;
+  --primary: #1460f2;
+  --danger: #c73535;
+  --ok: #1f8f4c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at 10% 10%, #ffffff 0%, var(--bg) 55%);
+  color: var(--text);
+}
+
+.container {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1.25rem;
+}
+
+h1 {
+  margin: 0 0 0.5rem;
+  font-size: 2rem;
+}
+
+h2,
+h3 {
+  margin-top: 0;
+}
+
+.subtitle {
+  margin-top: 0;
+  color: var(--muted);
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 8px 24px rgba(11, 31, 58, 0.06);
+}
+
+label {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+input[type="text"],
+input:not([type]) {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  font-size: 1rem;
+}
+
+button {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--text);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--primary);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.code-row,
+.role-row,
+.controls {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+  flex-wrap: wrap;
+}
+
+.status {
+  color: var(--muted);
+  margin: 0.4rem 0 0;
+}
+
+.status.ok {
+  color: var(--ok);
+}
+
+.status.error {
+  color: var(--danger);
+}
+
+.meter {
+  width: 100%;
+  height: 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.meter-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #44c776, #f4b728, #da3a3a);
+  transition: width 90ms linear;
+}
+
+.alerts-list {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.alerts-list li {
+  margin: 0.35rem 0;
+}
+
+.card audio {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.hidden {
+  display: none;
+}
+
+@media (max-width: 620px) {
+  .container {
+    padding: 0.8rem;
+  }
+
+  .code-row,
+  .role-row,
+  .controls {
+    flex-direction: column;
+  }
+}

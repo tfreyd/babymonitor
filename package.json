@@ -1,0 +1,20 @@
+{
+  "name": "babymonitor",
+  "version": "1.0.0",
+  "description": "Simple baby monitor web app with baby and parent modes, noise detection, and notifications.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
+    "socket.io": "^4.8.3",
+    "web-push": "^3.6.7"
+  }
+}

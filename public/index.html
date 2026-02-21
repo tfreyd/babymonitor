@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Baby Monitor</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Baby Monitor</h1>
+      <p class="subtitle">Open on one device in baby mode and another in parent mode.</p>
+
+      <section class="card">
+        <label for="monitorCode">Monitor code</label>
+        <div class="code-row">
+          <input id="monitorCode" maxlength="8" placeholder="e.g. BABY01" />
+          <button id="randomCodeBtn" type="button">Random</button>
+        </div>
+        <label for="accessKey">Access key</label>
+        <input id="accessKey" type="password" minlength="6" placeholder="Shared secret for this monitor" />
+
+        <div class="role-row">
+          <button id="selectBabyBtn" type="button">Use as Baby Device</button>
+          <button id="selectParentBtn" type="button">Use as Parent Device</button>
+        </div>
+
+        <p id="connectionStatus" class="status">Not connected</p>
+      </section>
+
+      <section id="babyPanel" class="card hidden">
+        <h2>Baby Mode</h2>
+        <p>Detects loud sounds from this device microphone.</p>
+        <p class="status">Audio is streamed only after you press Start Monitoring.</p>
+        <label for="threshold">Noise threshold</label>
+        <input id="threshold" type="range" min="5" max="60" value="20" />
+        <p id="thresholdValue">Threshold: 20%</p>
+        <div class="meter">
+          <div id="meterFill" class="meter-fill"></div>
+        </div>
+        <div class="controls">
+          <button id="startMonitorBtn" type="button">Start Monitoring</button>
+          <button id="stopMonitorBtn" type="button" disabled>Stop</button>
+        </div>
+        <p id="babyStatus" class="status">Microphone is off</p>
+      </section>
+
+      <section id="parentPanel" class="card hidden">
+        <h2>Parent Mode</h2>
+        <p>Receives real-time alerts and browser push notifications.</p>
+        <h3>Live Audio</h3>
+        <audio id="liveAudio" controls autoplay playsinline></audio>
+        <p id="audioStatus" class="status">Waiting for baby device audio</p>
+        <div class="controls">
+          <button id="enablePushBtn" type="button">Enable Notifications</button>
+        </div>
+        <p id="pushStatus" class="status">Notifications not enabled</p>
+        <h3>Alerts</h3>
+        <ul id="alertsList" class="alerts-list"></ul>
+      </section>
+    </main>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>
